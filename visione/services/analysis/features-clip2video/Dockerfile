@@ -3,7 +3,7 @@ FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 WORKDIR /usr/src/app/
 
 # Install ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg git wget
+RUN apt-get update && apt-get install -y ffmpeg git wget pkg-config libavdevice-dev
 
 # Clone repo and pin to specific version
 RUN git clone https://github.com/CryhanFang/CLIP2Video && \

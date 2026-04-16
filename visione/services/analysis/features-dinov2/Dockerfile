@@ -5,11 +5,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install xformers>=0.0.35
+
 RUN cd /usr/src && \
     git clone https://github.com/facebookresearch/dinov2 && \
     cd /usr/src/dinov2 && \
     git checkout c3c2683a13cde94d4d99f523cf4170384b00c34c && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt --no-deps
 
 WORKDIR /usr/src/app
 

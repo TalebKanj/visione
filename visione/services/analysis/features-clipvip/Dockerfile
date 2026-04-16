@@ -3,7 +3,7 @@ FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 WORKDIR /usr/src/app
 
 # clone CLIPViP repo
-RUN apt-get update && apt-get install -y git wget
+RUN apt-get update && apt-get install -y git wget pkg-config libavdevice-dev
 RUN git clone https://github.com/mesnico/clip-vip_video_search
 RUN mv clip-vip_video_search/clipvip .
 
