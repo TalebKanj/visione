@@ -1,4 +1,4 @@
-FROM docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
+FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn8-runtime
 
 RUN apt-get update && apt-get install -y build-essential git
 

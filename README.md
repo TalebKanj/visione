@@ -32,9 +32,10 @@ We kindly ask you to refer to the following paper in publications mentioning or 
 ```
 ## Requirements
 You need:
-- Python >= 3.7
-- pip >= 21.3
+- Python >= 3.12
+- pip >= 23.0
 - a [Docker installation](https://docs.docker.com/engine/install/) with [Docker Compose](https://docs.docker.com/compose/install/) and [NVIDIA GPU support enabled](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
+- on Windows: Docker Desktop with WSL2 backend and NVIDIA Container Toolkit / WSL GPU support enabled
 
 You can test your installation with the following bash commands:
 ```bash
@@ -43,16 +44,14 @@ docker -v
 docker compose version
 
 # this should list your GPU(s)
-docker run --gpus all --rm -it nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+docker run --gpus all --rm -it nvidia/cuda:13.0.0-base-ubuntu22.04 nvidia-smi
 ```
 
-The installation has been tested so far with:
- - Ubuntu 22.04
- - Python 3.10.6
- - Docker version: 23.0.1
- - Docker Compose version: v2.16.0
- - nvidia-container-toolkit version: 1.12.0~rc.5-1
- - GPU: 1x NVIDIA RTX 2080Ti, Driver Version: 515.86.01, CUDA Version: 11.7
+The installation has been tested on WSL2 and Linux with:
+ - Python 3.12.x
+ - Docker Desktop / Docker Engine with Compose v2
+ - NVIDIA GPU support enabled through WSL2 or native Docker
+ - CUDA 13.0-compatible drivers and runtime
 
 
 ## Installation (from source)

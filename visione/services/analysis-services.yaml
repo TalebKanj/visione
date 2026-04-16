@@ -1,3 +1,9 @@
+x-gpu-device-requests: &gpu_device_requests
+  device_requests:
+    - driver: nvidia
+      count: all
+      capabilities: [gpu]
+
 services:
   ffmpeg:
     image: jrottenberg/ffmpeg:5.1.2-nvidia2004
@@ -6,6 +12,7 @@ services:
       - ${VISIONE_ROOT}:/data
       - ${VISIONE_CACHE}:/cache
     profiles: ["analysis", "ffmpeg"]
+    <<: *gpu_device_requests
     deploy: &needs_gpu
       resources:
         reservations:
@@ -35,6 +42,7 @@ services:
     environment: ["DETECTOR_NAME=mrcnn-lvis"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-mrcnn-lvis"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
 
   objects-vfnet64-coco:
@@ -43,6 +51,7 @@ services:
     environment: ["DETECTOR_NAME=vfnet64-coco"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-vfnet64-coco"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
 
   objects-frcnn-oiv4:
@@ -50,6 +59,7 @@ services:
     image: visione/objects-openimagesv4
     volumes: *common_volumes
     profiles: ["analysis", "objects-frcnn-oiv4"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
 
   features-clip-openai:
@@ -60,6 +70,7 @@ services:
       - MODEL_HANDLE=openai/clip-vit-large-patch14
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-openai"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -71,6 +82,7 @@ services:
       - MODEL_HANDLE=laion/CLIP-ViT-H-14-laion2B-s32B-b79K
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-laion"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -82,6 +94,7 @@ services:
       - MODEL_HANDLE=laion/CLIP-ViT-L-14-DataComp.XL-s13B-b90K
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-datacomp"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -93,6 +106,7 @@ services:
       - MODEL_HANDLE=hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
     volumes: *common_volumes
     profiles: ["analysis", "features-biomed-clip"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -101,6 +115,7 @@ services:
     image: visione/features-clip2video
     volumes: *common_volumes
     profiles: ["analysis", "features-clip2video"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -111,6 +126,7 @@ services:
     image: visione/features-aladin
     volumes: *common_volumes
     profiles: ["analysis", "features-aladin"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -122,6 +138,7 @@ services:
       - MODEL=dinov2_vits14
     volumes: *common_volumes
     profiles: ["analysis", "features-dinov2"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 
@@ -130,6 +147,7 @@ services:
     image: visione/features-clipvip
     volumes: *common_volumes
     profiles: ["analysis", "features-clipvip"]
+    <<: *gpu_device_requests
     deploy: *needs_gpu
     shm_size: 16g
 

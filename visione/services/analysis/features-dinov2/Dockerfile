@@ -1,4 +1,4 @@
-FROM docker.io/pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime
+FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn8-runtime
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
