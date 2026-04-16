@@ -16,11 +16,11 @@ RUN sed -i -e 's|if torch._six.PY3:|if True:|' maskrcnn_benchmark/utils/imports.
 RUN sed -i -e 's|from torch.hub import _download_url_to_file|from torch.hub import download_url_to_file|' maskrcnn_benchmark/utils/model_zoo.py
 
 # Install dependencies (both scene graph and ALADIN)
-RUN pip install h5py==3.7.0 nltk==3.8.1 joblib==1.3.2 scipy==1.7.3 \
-                ninja==1.11.1.1 yacs>=0.1.8 cython==0.29.34 tqdm opencv-python-headless==4.9.0.80 numpy==1.21.2 \
-                timm==0.6.13 einops==0.6.1 pycocotools cityscapesscripts==2.2.2 \
-                pyyaml==6.0 requests==2.31.0 scikit-image==0.19.3 anytree==2.12.1 regex==2023.12.25 \
-                flask>=3.0 more_itertools==9.1.0 boto3
+RUN pip install h5py>=3.10.0 nltk>=3.8.1 joblib>=1.3.2 scipy>=1.10.0 \
+                ninja yacs>=0.1.8 cython tqdm opencv-python-headless>=4.9.0.80 numpy>=1.24.0 \
+                timm>=0.6.13 einops>=0.6.1 pycocotools cityscapesscripts>=2.2.2 \
+                pyyaml>=6.0 requests>=2.31.0 scikit-image>=0.21.0 anytree>=2.12.1 regex>=2023.12.25 \
+                flask>=3.0 more_itertools>=10.2.0 boto3
 # RUN python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 RUN python setup.py build develop
 
