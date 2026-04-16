@@ -1,8 +1,5 @@
 FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
 RUN apt-get update && apt-get install -y build-essential git
 
 #########################################################
