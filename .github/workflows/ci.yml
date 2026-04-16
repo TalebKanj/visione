@@ -1,0 +1,165 @@
+name: Build and Push to GHCR
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/visione
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      analysis: ${{ steps.filter.outputs.analysis }}
+      index: ${{ steps.filter.outputs.index }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'visione/services/core/**'
+              - 'visione/services/docker-compose.yaml'
+            analysis:
+              - 'visione/services/analysis/**'
+              - 'visione/services/analysis-services.yaml'
+            index:
+              - 'visione/services/index/**'
+              - 'visione/services/index-services.yaml'
+
+  build-core:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-core
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push core
+        uses: docker/build-push-action@v6
+        with:
+          context: ./visione/services/core
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-analysis:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.analysis == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - features-aladin
+          - features-clip
+          - features-clip2video
+          - features-clipvip
+          - features-dinov2
+          - features-openclip
+          - frame-cluster
+          - objects-colors
+          - objects-mmdet
+          - objects-openimagesv4
+          - scene-detection
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push analysis services
+        uses: docker/build-push-action@v6
+        with:
+          context: ./visione/services/analysis/${{ matrix.service }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-index:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.index == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - faiss-index-manager
+          - lucene-index-manager
+          - str-feature-encoder
+          - str-object-encoder
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push index services
+        uses: docker/build-push-action@v6
+        with:
+          context: ./visione/services/index/${{ matrix.service }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
