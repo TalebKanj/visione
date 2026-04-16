@@ -2,7 +2,7 @@ import argparse
 import collections
 import itertools
 import logging
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
@@ -194,10 +194,10 @@ class ColorExtractor(BaseExtractor):
         parser.add_argument('--quotient-threshold', type=float, default=0.30)
         parser.add_argument('--dominant-only', action='store_true', default=False)
         parser.add_argument('--keep-duplicates', action='store_true', default=False)
-        super(ColorExtractor, cls).add_arguments(parser)
+        super().add_arguments(parser)
 
     def __init__(self, args):
-        super(ColorExtractor, self).__init__(args)
+        super().__init__(args)
         self._loaded = False
 
     def setup(self):
@@ -243,16 +243,14 @@ class ColorExtractor(BaseExtractor):
 
     def extract(self, image_paths):
         self.setup()  # lazy loading extractor
-        with multiprocessing.Pool() as pool:
-            records = pool.map(self.extract_one, image_paths)
-            records = list(records)
+        with ProcessPoolExecutor() as executor:
+            records = list(executor.map(self.extract_one, image_paths))
         return records
 
     def extract_iterable(self, image_paths, chunk_size=50):
         self.setup()  # lazy loading extractor
-        # FIXME: on slow I/O, imap() could saturate memory
-        with multiprocessing.Pool() as pool:
-            yield from pool.imap(self.extract_one, image_paths)
+        with ProcessPoolExecutor() as executor:
+            yield from executor.map(self.extract_one, image_paths)
 
 
 if __name__ == "__main__":

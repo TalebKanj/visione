@@ -1,4 +1,4 @@
-FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn8-runtime
+FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 
 WORKDIR /usr/src/app
 

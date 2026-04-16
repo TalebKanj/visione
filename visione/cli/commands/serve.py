@@ -9,7 +9,7 @@ class ServeCommand(BaseCommand):
     """ Implements the 'serve' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(ServeCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('serve', help='Start the VISIONE server')
@@ -17,7 +17,7 @@ class ServeCommand(BaseCommand):
         parser.set_defaults(func=self)
 
     def __call__(self, *, port, **kwargs):
-        super(ServeCommand, ServeCommand).__call__(self, **kwargs)
+        super().__call__(**kwargs)
 
         # selects mandatory services needed to respond to queries
         profile_options = ['--profile', 'query']

@@ -10,7 +10,7 @@ from . import CliProgress
 from .savers import GzipJsonlFile, HDF5File
 
 
-class BaseExtractor(object):
+class BaseExtractor:
     """ Base class for all extractors. """
 
     @classmethod
@@ -38,7 +38,7 @@ class BaseExtractor(object):
 
     def __init__(self, args):
         """ Initialize the extractor. """
-        super(BaseExtractor, self).__init__()
+        super().__init__()
         self.args = args
 
     def parse_input(self):
@@ -140,7 +140,7 @@ class BaseExtractor(object):
                 saver.add_many(records, force=self.args.force)
 
 
-class BaseVideoExtractor(object):
+class BaseVideoExtractor:
     """ Base class for all video extractors. """
 
     @classmethod
@@ -167,7 +167,7 @@ class BaseVideoExtractor(object):
 
     def __init__(self, args):
         """ Initialize the extractor. """
-        super(BaseVideoExtractor, self).__init__()
+        super().__init__()
         self.args = args
 
     def parse_input(self):

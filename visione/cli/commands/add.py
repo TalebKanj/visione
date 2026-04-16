@@ -8,7 +8,7 @@ class AddCommand(ImportCommand, AnalyzeCommand, IndexCommand):
     """ Implements the 'add' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(AddCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('add', help="Imports, analyzes, and adds a video to the collection index. (Same as running 'import', 'analyze', and 'index' commands.)")

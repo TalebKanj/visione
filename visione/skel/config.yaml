@@ -21,7 +21,7 @@ main:
   # Set to true to enable the development mode. In this mode, the code of
   # services of editable installs will be mounted to docker containers, allowing
   # for live code changes.
-  develop_mode: false
+  develop_mode: true
 
   # (DEPRECATED) Access credentials for the internal tomcat server.
   username: admin

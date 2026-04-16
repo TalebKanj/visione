@@ -11,7 +11,7 @@ class RemoveCommand(BaseCommand):
     """ Implements the 'remove' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(RemoveCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('remove', help='Removes one or more videos from the collection.')
@@ -21,7 +21,7 @@ class RemoveCommand(BaseCommand):
         parser.set_defaults(func=self)
 
     def __call__(self, *, video_ids, content, analysis, **kwargs):
-        super(RemoveCommand, RemoveCommand).__call__(self, **kwargs)
+        super().__call__(**kwargs)
 
         status = Status('Removing ...')
         status.start()

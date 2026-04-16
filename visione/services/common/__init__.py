@@ -18,10 +18,10 @@ def load_config(yaml_path):
     return config
 
 
-class CliProgress(object):
+class CliProgress:
     """ Progress bar for CLI. """
     def __init__(self, initial=0, total=-1, print_fn=print):
-        super(CliProgress, self).__init__()
+        super().__init__()
         self.initial = initial
         self.total = -1 if total is None else total
         self.print_fn = print_fn

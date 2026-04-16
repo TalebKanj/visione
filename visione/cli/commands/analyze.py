@@ -10,7 +10,7 @@ class AnalyzeCommand(BaseCommand):
     """ Implements the 'analyze' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(AnalyzeCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('analyze', help='Analyzes videos imported in the collection.')

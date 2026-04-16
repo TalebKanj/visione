@@ -1,3 +1,2 @@
-importlib-resources; python_version<'3.12'
 pyyaml
 rich

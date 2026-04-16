@@ -18,7 +18,7 @@ class IndexCommand(BaseCommand):
     """ Implements the 'index' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(IndexCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('index', help='Create index entries for analyzed videos.')
@@ -29,7 +29,7 @@ class IndexCommand(BaseCommand):
         parser.set_defaults(func=self)
 
     def __call__(self, *, video_ids, replace, bulk, phases, **kwargs):
-        super(IndexCommand, IndexCommand).__call__(self, **kwargs)
+        super().__call__(**kwargs)
         self.create_services_containers()
 
         index_kwargs = dict(video_ids=video_ids, replace=replace, phases=phases)

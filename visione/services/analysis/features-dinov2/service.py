@@ -1,6 +1,8 @@
 import argparse
 import logging
 import os
+import tempfile
+import shutil
 import urllib.request
 
 from flask import Flask, request, jsonify
@@ -44,9 +46,14 @@ class DinoV2Extractor():
         return features
 
     def extract_from_url(self, image_url):
-        image_path, _ = urllib.request.urlretrieve(image_url)
-        features = self.extract_from_path(image_path)
-        urllib.request.urlcleanup()
+        with urllib.request.urlopen(image_url) as response:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+                shutil.copyfileobj(response, tmp)
+                tmp_path = tmp.name
+        try:
+            features = self.extract_from_path(tmp_path)
+        finally:
+            os.unlink(tmp_path)
         return features
 
 

@@ -1,8 +1,11 @@
-x-gpu-device-requests: &gpu_device_requests
-  device_requests:
-    - driver: nvidia
-      count: all
-      capabilities: [gpu]
+x-gpu-deploy: &gpu_deploy
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
 
 services:
   ffmpeg:
@@ -12,14 +15,7 @@ services:
       - ${VISIONE_ROOT}:/data
       - ${VISIONE_CACHE}:/cache
     profiles: ["analysis", "ffmpeg"]
-    <<: *gpu_device_requests
-    deploy: &needs_gpu
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    <<: *gpu_deploy
 
   scene-detection:
     build: ./analysis/scene-detection
@@ -42,8 +38,7 @@ services:
     environment: ["DETECTOR_NAME=mrcnn-lvis"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-mrcnn-lvis"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
 
   objects-vfnet64-coco:
     build: ./analysis/objects-mmdet
@@ -51,16 +46,13 @@ services:
     environment: ["DETECTOR_NAME=vfnet64-coco"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-vfnet64-coco"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
 
   objects-frcnn-oiv4:
     build: ./analysis/objects-openimagesv4
     image: visione/objects-openimagesv4
     volumes: *common_volumes
     profiles: ["analysis", "objects-frcnn-oiv4"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
 
   features-clip-openai:
     build: ./analysis/features-clip
@@ -70,8 +62,7 @@ services:
       - MODEL_HANDLE=openai/clip-vit-large-patch14
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-openai"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-clip-laion:
@@ -82,8 +73,7 @@ services:
       - MODEL_HANDLE=laion/CLIP-ViT-H-14-laion2B-s32B-b79K
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-laion"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-clip-datacomp:
@@ -94,8 +84,7 @@ services:
       - MODEL_HANDLE=laion/CLIP-ViT-L-14-DataComp.XL-s13B-b90K
     volumes: *common_volumes
     profiles: ["analysis", "features-clip-datacomp"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-biomed-clip:
@@ -106,8 +95,7 @@ services:
       - MODEL_HANDLE=hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
     volumes: *common_volumes
     profiles: ["analysis", "features-biomed-clip"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-clip2video:
@@ -115,8 +103,7 @@ services:
     image: visione/features-clip2video
     volumes: *common_volumes
     profiles: ["analysis", "features-clip2video"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-aladin:
@@ -126,8 +113,7 @@ services:
     image: visione/features-aladin
     volumes: *common_volumes
     profiles: ["analysis", "features-aladin"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-dinov2:
@@ -138,8 +124,7 @@ services:
       - MODEL=dinov2_vits14
     volumes: *common_volumes
     profiles: ["analysis", "features-dinov2"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   features-clipvip:
@@ -147,8 +132,7 @@ services:
     image: visione/features-clipvip
     volumes: *common_volumes
     profiles: ["analysis", "features-clipvip"]
-    <<: *gpu_device_requests
-    deploy: *needs_gpu
+    <<: *gpu_deploy
     shm_size: 16g
 
   frame-cluster:
@@ -157,3 +141,20 @@ services:
     volumes: *common_volumes
     profiles: ["analysis", "frame-cluster"]
 
+  str-object-encoder:
+    build: ./index/str-object-encoder
+    image: visione/str-object-encoder
+    volumes: *common_volumes
+    profiles: ["analysis", "str-object-encoder"]
+
+  str-feature-encoder:
+    build: ./index/str-feature-encoder
+    image: visione/str-feature-encoder
+    volumes: *common_volumes
+    profiles: ["analysis", "str-feature-encoder"]
+
+  faiss-index-manager:
+    build: ./index/faiss-index-manager
+    image: visione/faiss-index-manager
+    volumes: *common_volumes
+    profiles: ["analysis", "faiss-index-manager"]

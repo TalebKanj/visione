@@ -8,7 +8,7 @@ class ComposeCommand(BaseCommand):
     """ Implements the 'compose' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(ComposeCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('compose', help='Execute compose commands in the compose project of the collection.')
@@ -16,7 +16,7 @@ class ComposeCommand(BaseCommand):
         parser.set_defaults(func=self)
 
     def __call__(self, *, cmd, **kwargs):
-        super(ComposeCommand, ComposeCommand).__call__(self, **kwargs)
+        super().__call__(**kwargs)
 
         # selects mandatory services needed to respond to queries
         profile_options = ['--profile', 'query']

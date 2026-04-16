@@ -27,8 +27,8 @@ classifiers = [
 dynamic = ["dependencies"]
 
 [project.urls]
-"Homepage" = "https://github.com/aimh-lab/visione"
-"Bug Tracker" = "https://github.com/aimh-lab/visione/issues"
+"Homepage" = "https://github.com/talebkanj/visione"
+"Bug Tracker" = "https://github.com/talebkanj/visione/issues"
 
 [project.scripts]
 visione = "visione.cli:__main__.main"

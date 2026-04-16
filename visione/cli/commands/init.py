@@ -17,7 +17,7 @@ class InitCommand(BaseCommand):
     """ Implements the 'init' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(InitCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('init', help='Create a new empty collection.')
@@ -26,7 +26,7 @@ class InitCommand(BaseCommand):
 
     def __call__(self, *, directory, **kwargs):
         # FIXME config loading is in common command setup, but must be skipped for 'init'
-        # super(InitCommand, InitCommand).__call__(self, **kwargs)
+        # super().__call__(**kwargs)
 
         skel = _get_skel_dir()
         # TODO manage already existing collection

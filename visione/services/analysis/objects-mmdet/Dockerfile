@@ -1,4 +1,4 @@
-FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn8-runtime
+FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 
 RUN apt-get update && \
     apt-get install -y build-essential wget git && \
@@ -30,7 +30,7 @@ RUN wget https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x
 
 # app requirements
 RUN pip install \
-        h5py==3.10.0 \
+        h5py>=3.10.0 \
         more_itertools==10.2.0
 
 WORKDIR /usr/src/app/

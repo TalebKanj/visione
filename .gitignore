@@ -1,0 +1,4 @@
+test-collection/
+visione.egg-info/
+*.pyc
+__pycache__/

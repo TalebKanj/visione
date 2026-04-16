@@ -1,4 +1,4 @@
-FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn8-runtime
+FROM docker.io/pytorch/pytorch:2.9.0-cuda13.0-cudnn9-runtime
 
 WORKDIR /usr/src/app/
 
@@ -15,7 +15,7 @@ RUN sed -i '/torch/d' CLIP2Video/requirements.txt
 RUN pip install -r CLIP2Video/requirements.txt
 
 # Install other dependencies
-RUN pip install gdown more_itertools==10.2.0 av==11.0.0 h5py==3.10.0 flask==2.2.3 "Werkzeug>=2.2,<3.0"
+RUN pip install gdown more_itertools==10.2.0 av==11.0.0 h5py==3.10.0 flask>=3.0 werkzeug>=3.0
 
 # Download CLIP and CLIP2Video models
 RUN mkdir -p checkpoint && \

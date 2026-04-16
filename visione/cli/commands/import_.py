@@ -40,7 +40,7 @@ class ImportCommand(BaseCommand):
     """ Implements the 'import' CLI command. """
 
     def __init__(self, *args, **kwargs):
-        super(ImportCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def add_arguments(self, subparsers):
         parser = subparsers.add_parser('import', help='Imports a video to the collection.')
@@ -77,7 +77,7 @@ class ImportCommand(BaseCommand):
         bulk=False,
         **kwargs,
     ):
-        super(ImportCommand, ImportCommand).__call__(self, **kwargs)
+        super().__call__(**kwargs)
         self.create_services_containers()
 
         assert not (video_id and video_path_or_url is None), "Cannot specify --id without video_path_or_url"
@@ -300,8 +300,18 @@ class ImportCommand(BaseCommand):
         if show_progress:
             show_progress_fn = lambda block_num, block_size, total_size: show_progress(block_num * block_size, total_size)
 
-        # use urlretrieve
-        urllib.request.urlretrieve(video_url.geturl(), video_out, show_progress_fn)
+        with urllib.request.urlopen(video_url.geturl()) as response:
+            total_size = int(response.headers.get('Content-Length', -1) or -1)
+            downloaded = 0
+            with open(video_out, 'wb') as f:
+                while True:
+                    chunk = response.read(65536)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if show_progress_fn:
+                        show_progress_fn(downloaded, 65536, total_size)
         return video_id, video_out
 
     def create_resized_videos(self, video_path, video_id, force=False, gpu=False, show_progress=None):
@@ -363,7 +373,7 @@ class ImportCommand(BaseCommand):
                 '-vf', "scale_npp=146:-1:force_divisible_by=2",
                 '-c:v', 'h264_nvenc', '-preset', 'p6', '-tune', 'hq',
             ] if gpu else [
-                '-vf', "scale=146:-1:force_divisible_by=2,pad='iw+mod(iw\,2)':'ih+mod(ih\,2)'",
+                '-vf', r"scale=146:-1:force_divisible_by=2,pad='iw+mod(iw\,2)':'ih+mod(ih\,2)'",
                 '-c:v', 'libx264', '-preset', 'slower', '-crf', '28', '-movflags', '+faststart',
             ]) + [
             '-c:a', 'aac', '-b:a', '128k',
@@ -373,7 +383,7 @@ class ImportCommand(BaseCommand):
                 '-vf', "scale_npp=-1:480:force_divisible_by=2",
                 '-c:v', 'h264_nvenc', '-preset', 'p6', '-tune', 'hq',
             ] if gpu else [
-                '-vf', "scale=-1:480:force_divisible_by=2,pad='iw+mod(iw\,2)':'ih+mod(ih\,2)'",
+                '-vf', r"scale=-1:480:force_divisible_by=2,pad='iw+mod(iw\,2)':'ih+mod(ih\,2)'",
                 '-c:v', 'libx264', '-preset', 'slower', '-crf', '30', '-movflags', '+faststart',
             ]) + [
             '-c:a', 'aac', '-b:a', '128k',

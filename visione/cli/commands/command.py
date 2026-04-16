@@ -48,27 +48,29 @@ class BaseCommand(ABC):
         config_env_vars.update({f'VISIONE_{k.upper()}': str(v) for k, v in self.config['services_urls'].items()})
 
         self.compose_env = {
+            **os.environ,
             **config_env_vars,
-            'VISIONE_ROOT': self.collection_dir,
-            'VISIONE_CACHE': self.cache_dir,
+            'VISIONE_ROOT': str(self.collection_dir),
+            'VISIONE_CACHE': str(self.cache_dir),
         }
 
         self.develop_mode = self.config['main'].get('develop_mode', False)
         self.verbose = verbose
+        self._windows_shell = os.name == 'nt'
 
         self._find_docker_compose_executable()
 
 
+    def _compose_cmd_str(self, cmd_list):
+        if self._windows_shell:
+            return subprocess.list2cmdline(cmd_list)
+        return cmd_list
+
     def _find_docker_compose_executable(self):
-        # check if docker executable is available
         if shutil.which('docker') is None:
             raise RuntimeError("'docker' executable not found. Do you have docker installed?")
 
-        # check if docker is already shipped with compose v2
-        ret_code = subprocess.call(['docker', 'compose'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        compose_v2 = ret_code == 0
-
-        # check if the separate docker-compose executable is available
+        compose_v2 = shutil.which('docker') is not None
         compose_v1 = shutil.which('docker-compose') is not None
 
         if compose_v2:
@@ -98,8 +100,9 @@ class BaseCommand(ABC):
             'run',
             '--rm',
             '--no-deps',
-            '--user', f'{os.getuid()}:{os.getgid()}',
         ]
+        if os.name == 'posix':
+            self.compose_run_cmd += ['--user', f'{os.getuid()}:{os.getgid()}']
 
     def compose_run(self, service_name, service_command, stdout_callback=None, stderr_callback=None, check=True, **run_kws):
         command = self.compose_run_cmd + [service_name] + service_command
@@ -117,8 +120,9 @@ class BaseCommand(ABC):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=self.compose_env,
+            shell=self._windows_shell,
         )
-        with subprocess.Popen(command, **popen_kws) as service_process:
+        with subprocess.Popen(self._compose_cmd_str(command), **popen_kws) as service_process:
             if stdout_callback or stderr_callback:
                 with selectors.DefaultSelector() as selector:
                     selector.register(service_process.stdout, selectors.EVENT_READ, stdout_callback)
@@ -148,15 +152,12 @@ class BaseCommand(ABC):
             return service_process.returncode
 
     def is_gpu_available(self):
-        # FIXME we are assuming nvidia-smi is installed on systems with GPU(s)
         if shutil.which('nvidia-smi') is None:
             return False
 
         try:
-            command = "nvidia-smi --list-gpus | wc -l"
-            gpus = subprocess.check_output(command, shell=True, text='utf8')
-            return int(gpus) > 0
-
+            gpus = subprocess.check_output(['nvidia-smi', '--list-gpus'], text='utf8')
+            return bool(gpus.strip())
         except Exception:
             return False
 
@@ -199,7 +200,7 @@ class BaseCommand(ABC):
             '--remove-orphans',
         ]
 
-        return subprocess.run(command, env=self.compose_env, check=True)
+        return subprocess.run(self._compose_cmd_str(command), env=self.compose_env, check=True, shell=self._windows_shell)
 
 
     def progress_callback(self, progress, task_id):
