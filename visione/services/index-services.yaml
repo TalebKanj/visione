@@ -1,7 +1,8 @@
 services:
   str-object-encoder:
     build: ./index/str-object-encoder
-    image: ghcr.io/talebkanj/str-object-encoder
+    image: ghcr.io/talebkanj/visione-str-object-encoder
+
     volumes: &common_volumes
       - ${VISIONE_ROOT}:/data
       - ${VISIONE_CACHE}:/cache
@@ -10,18 +11,21 @@ services:
 
   str-feature-encoder:
     build: ./index/str-feature-encoder
-    image: ghcr.io/talebkanj/str-feature-encoder
+    image: ghcr.io/talebkanj/visione-str-feature-encoder
+
     volumes: *common_volumes
     profiles: ["query", "index", "str-feature-encoder"]
 
   lucene-index-manager:
     build: ./index/lucene-index-manager
-    image: ghcr.io/talebkanj/lucene-index-manager
+    image: ghcr.io/talebkanj/visione-lucene-index-manager
+
     volumes: *common_volumes
     profiles: ["index", "lucene-index-manager"]
 
   faiss-index-manager:
     build: ./index/faiss-index-manager
-    image: ghcr.io/talebkanj/faiss-index-manager
+    image: ghcr.io/talebkanj/visione-faiss-index-manager
+
     volumes: *common_volumes
     profiles: ["query", "index", "faiss-index-manager"]

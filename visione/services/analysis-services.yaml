@@ -19,7 +19,8 @@ services:
 
   scene-detection:
     build: ./analysis/scene-detection
-    image: ghcr.io/talebkanj/scene-detection
+    image: ghcr.io/talebkanj/visione-scene-detection
+
     volumes: &common_volumes
       - ${VISIONE_ROOT}:/data
       - ${VISIONE_CACHE}:/cache
@@ -28,13 +29,15 @@ services:
 
   objects-colors:
     build: ./analysis/objects-colors
-    image: ghcr.io/talebkanj/objects-colors
+
+    image: ghcr.io/talebkanj/visione-objects-colors
     volumes: *common_volumes
     profiles: ["analysis", "objects-colors"]
 
   objects-mrcnn-lvis:
     build: ./analysis/objects-mmdet
-    image: ghcr.io/talebkanj/objects-mmdet
+    image: ghcr.io/talebkanj/visione-objects-mmdet
+
     environment: ["DETECTOR_NAME=mrcnn-lvis"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-mrcnn-lvis"]
@@ -42,7 +45,8 @@ services:
 
   objects-vfnet64-coco:
     build: ./analysis/objects-mmdet
-    image: ghcr.io/talebkanj/objects-mmdet
+    image: ghcr.io/talebkanj/visione-objects-mmdet
+
     environment: ["DETECTOR_NAME=vfnet64-coco"]
     volumes: *common_volumes
     profiles: ["analysis", "objects-vfnet64-coco"]
@@ -50,13 +54,15 @@ services:
 
   objects-frcnn-oiv4:
     build: ./analysis/objects-openimagesv4
-    image: ghcr.io/talebkanj/objects-openimagesv4
+    image: ghcr.io/talebkanj/visione-objects-openimagesv4
+
     volumes: *common_volumes
     profiles: ["analysis", "objects-frcnn-oiv4"]
 
   features-clip-openai:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/features-clip
+    image: ghcr.io/talebkanj/visione-features-clip
+
     environment:
       - FEATURES_NAME=clip-openai
       - MODEL_HANDLE=openai/clip-vit-large-patch14
@@ -67,7 +73,8 @@ services:
 
   features-clip-laion:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/features-clip
+    image: ghcr.io/talebkanj/visione-features-clip
+
     environment:
       - FEATURES_NAME=clip-laion
       - MODEL_HANDLE=laion/CLIP-ViT-H-14-laion2B-s32B-b79K
@@ -78,7 +85,8 @@ services:
 
   features-clip-datacomp:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/features-clip
+    image: ghcr.io/talebkanj/visione-features-clip
+
     environment:
       - FEATURES_NAME=clip-datacomp
       - MODEL_HANDLE=laion/CLIP-ViT-L-14-DataComp.XL-s13B-b90K
@@ -89,7 +97,8 @@ services:
 
   features-biomed-clip:
     build: ./analysis/features-openclip
-    image: ghcr.io/talebkanj/features-openclip
+    image: ghcr.io/talebkanj/visione-features-openclip
+
     environment:
       - FEATURES_NAME=biomed-clip
       - MODEL_HANDLE=hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
@@ -100,7 +109,8 @@ services:
 
   features-clip2video:
     build: ./analysis/features-clip2video
-    image: ghcr.io/talebkanj/features-clip2video
+    image: ghcr.io/talebkanj/visione-features-clip2video
+
     volumes: *common_volumes
     profiles: ["analysis", "features-clip2video"]
     <<: *gpu_deploy
@@ -110,7 +120,8 @@ services:
     build:
       context: ./analysis/features-aladin
       secrets: ["asset_token"]
-    image: ghcr.io/talebkanj/features-aladin
+    image: ghcr.io/talebkanj/visione-features-aladin
+
     volumes: *common_volumes
     profiles: ["analysis", "features-aladin"]
     <<: *gpu_deploy
@@ -118,7 +129,8 @@ services:
 
   features-dinov2:
     build: ./analysis/features-dinov2
-    image: ghcr.io/talebkanj/features-dinov2
+    image: ghcr.io/talebkanj/visione-features-dinov2
+
     environment:
       - FEATURES_NAME=dinov2
       - MODEL=dinov2_vits14
@@ -129,7 +141,8 @@ services:
 
   features-clipvip:
     build: ./analysis/features-clipvip
-    image: ghcr.io/talebkanj/features-clipvip
+    image: ghcr.io/talebkanj/visione-features-clipvip
+
     volumes: *common_volumes
     profiles: ["analysis", "features-clipvip"]
     <<: *gpu_deploy
@@ -137,24 +150,28 @@ services:
 
   frame-cluster:
     build: ./analysis/frame-cluster
-    image: ghcr.io/talebkanj/frame-cluster
+    image: ghcr.io/talebkanj/visione-frame-cluster
+
     volumes: *common_volumes
     profiles: ["analysis", "frame-cluster"]
 
   str-object-encoder:
     build: ./index/str-object-encoder
-    image: ghcr.io/talebkanj/str-object-encoder
+    image: ghcr.io/talebkanj/visione-str-object-encoder
+
     volumes: *common_volumes
     profiles: ["analysis", "str-object-encoder"]
 
   str-feature-encoder:
     build: ./index/str-feature-encoder
-    image: ghcr.io/talebkanj/str-feature-encoder
+    image: ghcr.io/talebkanj/visione-str-feature-encoder
+
     volumes: *common_volumes
     profiles: ["analysis", "str-feature-encoder"]
 
   faiss-index-manager:
     build: ./index/faiss-index-manager
-    image: ghcr.io/talebkanj/faiss-index-manager
+    image: ghcr.io/talebkanj/visione-faiss-index-manager
+
     volumes: *common_volumes
     profiles: ["analysis", "faiss-index-manager"]
