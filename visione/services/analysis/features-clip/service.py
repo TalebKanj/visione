@@ -26,8 +26,14 @@ app = Flask(__name__)
 
 class CLIPTextEncoder():
     def __init__(self, model_handle):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = AutoModel.from_pretrained(model_handle, cache_dir="/cache/huggingface").to(device)
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = AutoModel.from_pretrained(
+            model_handle,
+            cache_dir="/cache/huggingface",
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+            device_map="auto"
+        )
         self.tokenizer = AutoTokenizer.from_pretrained(model_handle, cache_dir="/cache/huggingface")
 
     def get_text_embedding(self, text, normalized=False):

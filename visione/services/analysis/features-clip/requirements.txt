@@ -5,3 +5,4 @@ more_itertools==10.2.0
 Pillow>=10.0.0,<14.0
 pyyaml==6.0
 transformers==4.27.4
+accelerate>=0.20.0

@@ -5,6 +5,22 @@ secrets:
 volumes:
   model_cache:
     driver: local
+  huggingface_cache:
+    driver: local
+  torch_cache:
+    driver: local
+
+x-desktop-deploy: &desktop_deploy
+  deploy:
+    resources:
+      limits:
+        memory: 4G
+      reservations:
+        memory: 2G
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
 
 services:
   router:
@@ -36,3 +52,18 @@ services:
     volumes:
       - ${VISIONE_ROOT}:/data
     profiles: ["query", "core"]
+
+  features-clip:
+    build: ./analysis/features-clip
+    image: ghcr.io/talebkanj/visione-features-clip
+    volumes:
+      - ${VISIONE_ROOT}:/data
+      - ${VISIONE_CACHE}:/cache
+      - ./common:/usr/src/visione:ro
+      - huggingface_cache:/cache/huggingface
+      - torch_cache:/cache/torch
+    environment:
+      - FEATURES_NAME=clip-laion
+      - MODEL_HANDLE=laion/CLIP-ViT-H-14-laion2B-s32B-b79K
+    profiles: ["analysis", "features-clip"]
+    <<: *desktop_deploy
