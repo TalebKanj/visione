@@ -8,14 +8,17 @@ import numpy as np
 import requests
 import torch
 
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
+torch.set_num_threads(4)
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 class QueryEncoder:
     def __init__(self, str_args):
         args, student_model, dataloader = load_oscar(str_args)
-        self.model = student_model
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = student_model.to(device)
         self.model.eval()
 
         self.dataset = dataloader.dataset

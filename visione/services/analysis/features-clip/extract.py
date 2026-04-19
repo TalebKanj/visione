@@ -10,9 +10,14 @@ from transformers import CLIPProcessor, CLIPModel
 
 from visione.extractor import BaseExtractor
 
+import os
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
 for logger in loggers:
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.INFO)
 
 
 class ImageListDataset(torch.utils.data.Dataset):
@@ -77,10 +82,9 @@ class CLIPExtractor(BaseExtractor):
 
     def setup(self):
         if self.model is None:
-            # lazy load models
             self.device = 'cuda' if self.args.gpu and torch.cuda.is_available() else 'cpu'
-            self.model = CLIPModel.from_pretrained(self.args.model_handle).to(self.device)
-            self.processor = CLIPProcessor.from_pretrained(self.args.model_handle)
+            self.model = CLIPModel.from_pretrained(self.args.model_handle, cache_dir="/cache/huggingface").to(self.device)
+            self.processor = CLIPProcessor.from_pretrained(self.args.model_handle, cache_dir="/cache/huggingface")
 
     def extract(self, image_paths):
         batch_size = len(image_paths)

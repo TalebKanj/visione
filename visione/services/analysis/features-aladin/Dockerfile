@@ -46,6 +46,25 @@ WORKDIR /usr/src/app/ALADIN
 RUN git checkout feature_extraction
 RUN python setup.py build develop
 
+# Fix torch.load for PyTorch 2.6+ compatibility (weights_only default changed to True)
+# Using Python for more reliable patching
+RUN python3 -c "
+import os
+f = '/usr/src/app/ALADIN/alad/extraction/retrieval_utils.py'
+if os.path.exists(f):
+    with open(f, 'r') as file:
+        content = file.read()
+    content = content.replace(
+        \"torch.load(filename, map_location='cpu')\",
+        \"torch.load(filename, map_location='cpu', weights_only=False)\"
+    )
+    with open(f, 'w') as file:
+        file.write(content)
+    print('Patched torch.load with weights_only=False')
+else:
+    print(f'File not found: {f}')
+"
+
 # Download weights
 RUN --mount=type=secret,id=asset_token,required \
     mkdir -p weights && \

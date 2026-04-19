@@ -1,11 +1,19 @@
 x-gpu-deploy: &gpu_deploy
   deploy:
     resources:
+      limits:
+        memory: 9G
       reservations:
+        memory: 4G
         devices:
           - driver: nvidia
-            count: all
+            count: 1
             capabilities: [gpu]
+  environment:
+    - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    - OMP_NUM_THREADS=4
+    - MKL_NUM_THREADS=4
+    - TORCH_SHOW_CPP_STACKTRACES=1
 
 services:
   ffmpeg:
@@ -62,6 +70,8 @@ services:
   features-clip-openai:
     build: ./analysis/features-clip
     image: ghcr.io/talebkanj/visione-features-clip
+    depends_on:
+      - faiss-index-manager
 
     environment:
       - FEATURES_NAME=clip-openai
@@ -74,6 +84,8 @@ services:
   features-clip-laion:
     build: ./analysis/features-clip
     image: ghcr.io/talebkanj/visione-features-clip
+    depends_on:
+      - faiss-index-manager
 
     environment:
       - FEATURES_NAME=clip-laion
@@ -86,6 +98,8 @@ services:
   features-clip-datacomp:
     build: ./analysis/features-clip
     image: ghcr.io/talebkanj/visione-features-clip
+    depends_on:
+      - faiss-index-manager
 
     environment:
       - FEATURES_NAME=clip-datacomp
@@ -98,6 +112,8 @@ services:
   features-biomed-clip:
     build: ./analysis/features-openclip
     image: ghcr.io/talebkanj/visione-features-openclip
+    depends_on:
+      - faiss-index-manager
 
     environment:
       - FEATURES_NAME=biomed-clip
@@ -110,6 +126,8 @@ services:
   features-clip2video:
     build: ./analysis/features-clip2video
     image: ghcr.io/talebkanj/visione-features-clip2video
+    depends_on:
+      - faiss-index-manager
 
     volumes: *common_volumes
     profiles: ["analysis", "features-clip2video"]
@@ -121,6 +139,8 @@ services:
       context: ./analysis/features-aladin
       secrets: ["asset_token"]
     image: ghcr.io/talebkanj/visione-features-aladin
+    depends_on:
+      - faiss-index-manager
 
     volumes: *common_volumes
     profiles: ["analysis", "features-aladin"]
@@ -130,6 +150,8 @@ services:
   features-dinov2:
     build: ./analysis/features-dinov2
     image: ghcr.io/talebkanj/visione-features-dinov2
+    depends_on:
+      - faiss-index-manager
 
     environment:
       - FEATURES_NAME=dinov2
@@ -142,6 +164,8 @@ services:
   features-clipvip:
     build: ./analysis/features-clipvip
     image: ghcr.io/talebkanj/visione-features-clipvip
+    depends_on:
+      - faiss-index-manager
 
     volumes: *common_volumes
     profiles: ["analysis", "features-clipvip"]

@@ -13,7 +13,12 @@ from transformers import AutoTokenizer, AutoModel
 
 
 # setup logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+
+# Optimize PyTorch for efficiency
+torch.set_num_threads(4)
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
 
 # create the Flask app
 app = Flask(__name__)
@@ -21,9 +26,9 @@ app = Flask(__name__)
 
 class CLIPTextEncoder():
     def __init__(self, model_handle):
-        device = 'cpu'
-        self.model = AutoModel.from_pretrained(model_handle).to(device)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_handle)
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = AutoModel.from_pretrained(model_handle, cache_dir="/cache/huggingface").to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_handle, cache_dir="/cache/huggingface")
 
     def get_text_embedding(self, text, normalized=False):
         with torch.no_grad():

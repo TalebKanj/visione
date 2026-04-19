@@ -91,24 +91,24 @@ analysis:
       chunk-size: 1000  # Frames are processed in chunks of this size.
     clip-openai:
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
     clip-laion:
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
     clip-datacomp:
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
     biomed-clip:
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
     clip2video:
       pad-shot-to: 6  # Pad shots shorter than this length (in seconds)
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
     clipvip:
       pad-shot-to: 6  # Pad shots shorter than this length (in seconds)
       batch-size: 1   # Batch size
-      num-workers: 8  # Number of workers
+      num-workers: 4  # Number of workers
 
   # Frame clustering parameters. These parameters are used to cluster similar
   # frames in a video. To disable frame clustering, comment or remove the

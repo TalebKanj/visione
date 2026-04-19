@@ -12,8 +12,11 @@ from torch.nn import functional as F
 from torchvision import transforms
 
 
-# setup logging
-logging.basicConfig(level=logging.DEBUG)
+torch.set_num_threads(4)
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 # create the Flask app
 app = Flask(__name__)
@@ -22,6 +25,7 @@ app = Flask(__name__)
 class DinoV2Extractor():
     def __init__(self, model_type='dinov2_vits14', gpu=False):
         self.device = 'cuda' if gpu else 'cpu'
+        torch.hub.set_dir("/cache/torch")
         self.model = torch.hub.load('facebookresearch/dinov2', model_type).to(self.device)
         self.transform = transforms.Compose([
             transforms.Resize(256),
@@ -88,14 +92,14 @@ def extract_quant_from_url():
     url = request.args.get("url")
     app.logger.info(f'Received URL: {url}')
     feature_vector = extractor.extract_from_url(url).squeeze()
-    app.logger.debug(f'Feature Vector: {feature_vector[:5]} ...')
+    app.logger.info(f'Feature Vector: {feature_vector[:5]} ...')
     str_doc = requests.post('http://str-feature-encoder:8080/encode', json={
         'type': 'dinov2',
         'feature_vector': feature_vector.tolist(),
     }).content
 
     str_doc = str_doc.decode('utf8')
-    app.logger.debug(str_doc[:25] + " ...")
+    app.logger.info(str_doc[:25] + " ...")
 
     return jsonify(str_doc)
 

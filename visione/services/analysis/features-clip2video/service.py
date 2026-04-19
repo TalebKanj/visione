@@ -13,13 +13,17 @@ from config import Config
 modules_path = os.path.dirname(os.path.abspath(__file__)) + '/CLIP2Video'
 sys.path.insert(0, modules_path)
 
-# disable GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
+# disable GPU - comment out to enable GPU
+# os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
 from modules.tokenization_clip import SimpleTokenizer as ClipTokenizer
 
+torch.set_num_threads(4)
+os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['MKL_NUM_THREADS'] = '4'
+
 # setup logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 # create the Flask app
 app = Flask(__name__)
