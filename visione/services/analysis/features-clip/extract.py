@@ -9,8 +9,13 @@ import torch
 from transformers import CLIPProcessor, CLIPModel
 
 from visione.extractor import BaseExtractor
+from visione.vram_aware_loader import (
+    load_hf_model_with_offload,
+    suggest_batch_size,
+    probe_vram,
+    get_offload_dir,
+)
 
-import os
 os.environ['OMP_NUM_THREADS'] = '4'
 os.environ['MKL_NUM_THREADS'] = '4'
 
@@ -82,9 +87,41 @@ class CLIPExtractor(BaseExtractor):
 
     def setup(self):
         if self.model is None:
-            self.device = 'cuda' if self.args.gpu and torch.cuda.is_available() else 'cpu'
-            self.model = CLIPModel.from_pretrained(self.args.model_handle, cache_dir="/cache/huggingface").to(self.device)
-            self.processor = CLIPProcessor.from_pretrained(self.args.model_handle, cache_dir="/cache/huggingface")
+            # Apply CLI overrides to env vars so the loader reads them
+            if self.args.vram_threshold is not None:
+                os.environ['VISIONE_VRAM_THRESHOLD'] = str(self.args.vram_threshold)
+            offload_dir = self.args.offload_dir or get_offload_dir()
+
+            if not self.args.gpu:
+                # GPU flag not set — force CPU mode
+                os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+            strategy = probe_vram(self._model_size_gb())
+            self._strategy = strategy
+
+            cache = "/cache/huggingface"
+            handle = self.args.model_handle
+            self.model = load_hf_model_with_offload(
+                from_pretrained_fn=lambda **kw: CLIPModel.from_pretrained(handle, cache_dir=cache, **kw),
+                model_size_gb=self._model_size_gb(),
+                offload_dir=offload_dir,
+            )
+            self.processor = CLIPProcessor.from_pretrained(handle, cache_dir=cache)
+
+            # Adjust device reference for tensor moves inside extract_iterable
+            if hasattr(self.model, 'device'):
+                self.device = self.model.device
+            else:
+                self.device = next(self.model.parameters()).device
+
+    def _model_size_gb(self) -> float:
+        """Rough VRAM estimate based on model variant."""
+        handle = getattr(self.args, 'model_handle', '')
+        if 'large' in handle or 'H-14' in handle or 'vit-l' in handle.lower():
+            return 3.5
+        if 'huge' in handle or 'G-14' in handle:
+            return 7.0
+        return 1.5  # ViT-B default
 
     def extract(self, image_paths):
         batch_size = len(image_paths)
@@ -101,9 +138,13 @@ class CLIPExtractor(BaseExtractor):
         # if we must preload, we might as well use a standard dataset
         image_paths = list(image_paths)
         dataset = ImageListDataset(image_paths, self.processor)
+
+        # Reduce batch size when running on CPU or disk offload
+        effective_batch = suggest_batch_size(self.args.batch_size, getattr(self, '_strategy', 'cuda'))
+
         dataloader = torch.utils.data.DataLoader(
             dataset,
-            batch_size=self.args.batch_size,
+            batch_size=effective_batch,
             num_workers=self.args.num_workers,
             collate_fn=ImageListDataset.collate_fn
         )

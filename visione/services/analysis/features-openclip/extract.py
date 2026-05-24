@@ -9,6 +9,12 @@ import torch
 import open_clip
 
 from visione.extractor import BaseExtractor
+from visione.vram_aware_loader import (
+    load_model_with_offload,
+    suggest_batch_size,
+    probe_vram,
+    get_offload_dir,
+)
 
 
 loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
@@ -74,12 +80,45 @@ class OpenCLIPExtractor(BaseExtractor):
 
     def setup(self):
         if self.model is None:
-            # lazy load models
-            self.device = 'cuda' if self.args.gpu and torch.cuda.is_available() else 'cpu'
+            # Apply CLI overrides
+            if self.args.vram_threshold is not None:
+                os.environ['VISIONE_VRAM_THRESHOLD'] = str(self.args.vram_threshold)
+            offload_dir = self.args.offload_dir or get_offload_dir()
+
+            if not self.args.gpu:
+                os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+            handle = self.args.model_handle
             os.makedirs('/cache/open_clip', exist_ok=True)
-            self.model, _, self.processor = open_clip.create_model_and_transforms(self.args.model_handle, cache_dir='/cache/open_clip')
-            self.model.to(self.device)
+
+            # open_clip is not HF — use generic loader
+            def _load():
+                model, _, processor = open_clip.create_model_and_transforms(
+                    handle, cache_dir='/cache/open_clip'
+                )
+                return model
+
+            # Estimate size from model name
+            if 'ViT-H' in handle or 'ViT-L' in handle:
+                size_gb = 3.5
+            elif 'ViT-G' in handle or 'ViT-bigG' in handle:
+                size_gb = 7.0
+            else:
+                size_gb = 1.5
+
+            strategy = probe_vram(size_gb)
+            self._strategy = strategy
+
+            self.model = load_model_with_offload(_load, model_size_gb=size_gb, offload_dir=offload_dir)
             self.model.eval()
+
+            # We need the preprocessor separately (no side effects in _load closure)
+            _, _, self.processor = open_clip.create_model_and_transforms(
+                handle, cache_dir='/cache/open_clip', pretrained=False
+            )
+
+            # Determine active device
+            self.device = next(self.model.parameters()).device
 
     def extract(self, image_paths):
         records = list(self.extract_iterable(image_paths))
@@ -88,14 +127,12 @@ class OpenCLIPExtractor(BaseExtractor):
     def extract_iterable(self, image_paths):
         self.setup()  # lazy load model
 
-        # FIXME: iterable dataset has problems with h5py in multiprocessing, it only works with preload=True
-        # dataset = WrapIterableDataset(image_paths, batch_size, self.processor, preload=True)
-        # dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=24)
-
         # if we must preload, we might as well use a standard dataset
         image_paths = list(image_paths)
         dataset = ImageListDataset(image_paths, self.processor)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=self.args.batch_size, num_workers=self.args.num_workers)
+
+        effective_batch = suggest_batch_size(self.args.batch_size, getattr(self, '_strategy', 'cuda'))
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=effective_batch, num_workers=self.args.num_workers)
 
         with torch.no_grad():
             for images_pt in dataloader:

@@ -20,6 +20,12 @@ class BaseExtractor:
         parser.add_argument('--force', default=False, action='store_true', help='overwrite existing data')
         parser.add_argument('--gpu', default=False, action='store_true', help='use the GPU if available')
         parser.add_argument('--save-every', type=int, default=5000, help='flush every N records extracted')
+        parser.add_argument('--vram-threshold', type=float, default=None,
+            help='fraction of free VRAM (0-1) required before attempting a GPU load; '
+                 'overrides the VISIONE_VRAM_THRESHOLD env var')
+        parser.add_argument('--offload-dir', type=str, default=None,
+            help='directory for disk-based model weight sharding (SSD offload path); '
+                 'overrides the VISIONE_OFFLOAD_DIR env var')
 
         parser.add_argument('input_images', type=Path, help='images to be processed.'
             'Can be a directory or a file with a list of images.'
@@ -150,6 +156,13 @@ class BaseVideoExtractor:
         parser.add_argument('--force', default=False, action='store_true', help='overwrite existing data')
         parser.add_argument('--gpu', default=False, action='store_true', help='use the GPU if available')
         parser.add_argument('--save-every', type=int, default=5000, help='flush every N records extracted')
+        parser.add_argument('--vram-threshold', type=float, default=None,
+            help='fraction of free VRAM (0-1) required before attempting a GPU load; '
+                 'overrides the VISIONE_VRAM_THRESHOLD env var')
+        parser.add_argument('--offload-dir', type=str, default=None,
+            help='directory for disk-based model weight sharding (SSD offload path); '
+                 'overrides the VISIONE_OFFLOAD_DIR env var')
+
 
         parser.add_argument('input_shots', type=Path, help='file containing the detected scenes.'
             'It is a file containing scenes information, in the format '

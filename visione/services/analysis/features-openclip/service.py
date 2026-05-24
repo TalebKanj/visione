@@ -8,6 +8,8 @@ import torch
 from torch.nn import functional as F
 import open_clip
 
+from visione.vram_aware_loader import load_model_with_offload, get_offload_dir, probe_vram
+
 
 # setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -17,18 +19,34 @@ app = Flask(__name__)
 
 
 class OpenCLIPTextEncoder():
-    def __init__(self, model_handle):
-        device = 'cpu'
-        self.model, _, _ = open_clip.create_model_and_transforms(model_handle)
+    def __init__(self, model_handle, offload_dir=None):
+        offload_dir = offload_dir or get_offload_dir()
+
+        if 'ViT-H' in model_handle or 'ViT-L' in model_handle:
+            size_gb = 3.5
+        elif 'ViT-G' in model_handle or 'ViT-bigG' in model_handle:
+            size_gb = 7.0
+        else:
+            size_gb = 1.5
+
+        probe_vram(size_gb)  # log strategy
+
+        def _load():
+            model, _, _ = open_clip.create_model_and_transforms(model_handle)
+            return model
+
+        self.model = load_model_with_offload(_load, model_size_gb=size_gb, offload_dir=offload_dir)
+        self.model.eval()
         self.tokenizer = open_clip.get_tokenizer(model_handle)
+        self.device = next(self.model.parameters()).device
 
     def get_text_embedding(self, text, normalized=False):
         with torch.no_grad():
-            inputs = self.tokenizer(text, context_length=256)
+            inputs = self.tokenizer(text, context_length=256).to(self.device)
             text_features = self.model.encode_text(inputs)
             if normalized:
                 text_features = F.normalize(text_features, dim=-1)
-            text_features = text_features.numpy().squeeze()
+            text_features = text_features.cpu().numpy().squeeze()
         return text_features
 
 @app.route('/ping', methods=['GET'])
@@ -94,11 +112,16 @@ if __name__ == '__main__':
     parser.add_argument('--port', default='8080', help="Port to use for binding")
     parser.add_argument('--model-handle', default=default_model_handle, help='hugging face handle of the Open CLIP model')
     parser.add_argument('--no-normalized', action='store_false', dest='normalized', default=True, help='Whether to normalize features or not')
+    parser.add_argument('--offload-dir', default=None, help='directory for disk-based model offloading')
+    parser.add_argument('--vram-threshold', type=float, default=None, help='VRAM fraction threshold before offloading')
 
     args = parser.parse_args()
 
+    if args.vram_threshold is not None:
+        os.environ['VISIONE_VRAM_THRESHOLD'] = str(args.vram_threshold)
+
     # init the query encoder
-    qe = OpenCLIPTextEncoder(args.model_handle)
+    qe = OpenCLIPTextEncoder(args.model_handle, offload_dir=args.offload_dir)
 
     # run the flask app
     app.run(debug=False, host=args.host, port=args.port)

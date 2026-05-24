@@ -14,6 +14,18 @@ x-gpu-deploy: &gpu_deploy
     - OMP_NUM_THREADS=4
     - MKL_NUM_THREADS=4
     - TORCH_SHOW_CPP_STACKTRACES=1
+    # VRAM-aware offloading configuration
+    # VISIONE_VRAM_THRESHOLD: fraction of free VRAM (0-1) required to keep model on GPU
+    #   Lower this value to offload to CPU/SSD earlier (e.g. 0.5 on 6GB cards)
+    - VISIONE_VRAM_THRESHOLD=${VISIONE_VRAM_THRESHOLD:-0.85}
+    # VISIONE_OFFLOAD_MODE: "auto" | "cpu" | "disk"
+    #   auto  -> probes VRAM, falls back CPU then disk
+    #   cpu   -> always use CPU RAM (skip GPU entirely)
+    #   disk  -> always shard model weights to /cache/model_offload
+    - VISIONE_OFFLOAD_MODE=${VISIONE_OFFLOAD_MODE:-auto}
+    # VISIONE_OFFLOAD_DIR: path inside the container where weight shards are written
+    #   /cache is already mounted from VISIONE_CACHE on the host
+    - VISIONE_OFFLOAD_DIR=/cache/model_offload
 
 services:
   ffmpeg:

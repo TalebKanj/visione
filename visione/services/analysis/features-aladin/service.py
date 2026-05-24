@@ -8,6 +8,8 @@ import numpy as np
 import requests
 import torch
 
+from visione.vram_aware_loader import load_model_with_offload, get_offload_dir, probe_vram
+
 torch.set_num_threads(4)
 os.environ['OMP_NUM_THREADS'] = '4'
 os.environ['MKL_NUM_THREADS'] = '4'
@@ -15,11 +17,21 @@ os.environ['MKL_NUM_THREADS'] = '4'
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 class QueryEncoder:
-    def __init__(self, str_args):
+    def __init__(self, str_args, offload_dir=None):
+        offload_dir = offload_dir or get_offload_dir()
         args, student_model, dataloader = load_oscar(str_args)
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = student_model.to(device)
+
+        # ALADIN's student model is a BERT-based model — ~0.5 GB
+        size_gb = 0.5
+        strategy = probe_vram(size_gb)
+
+        self.model = load_model_with_offload(
+            load_fn=lambda: student_model,
+            model_size_gb=size_gb,
+            offload_dir=offload_dir,
+        )
         self.model.eval()
+        self.device = next(self.model.parameters()).device
 
         self.dataset = dataloader.dataset
 
@@ -27,7 +39,12 @@ class QueryEncoder:
         examples_text = [self.dataset.tensorize_example_disentangled(text_a=caption, img_feat=None, text_b=None, return_lengths=True)]
         examples_text = [torch.stack(t) if isinstance(t[0], torch.Tensor) else t for t in zip(*examples_text)]
         with torch.no_grad():
-            _, txt_feature, _, _, _, _, _ = self.model.forward_emb(None, examples_text)
+            # Move tensors to model device
+            examples_text_dev = [
+                t.to(self.device) if isinstance(t, torch.Tensor) else t
+                for t in examples_text
+            ]
+            _, txt_feature, _, _, _, _, _ = self.model.forward_emb(None, examples_text_dev)
             txt_feature = txt_feature.cpu().squeeze(0).numpy()
             return txt_feature
 
@@ -38,7 +55,9 @@ app = Flask(__name__)
 args_str = '--eval_model_dir checkpoint-0132780 '+\
            '--max_seq_length 50 --max_img_seq_length 34 '+\
            '--load_checkpoint weights/best_model_align_and_distill.pth.tar'
-qe = QueryEncoder(args_str)
+# NOTE: qe is initialised after argument parsing so offload_dir / vram_threshold
+# can be propagated from CLI flags (see __main__ block below).
+qe = None
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -85,6 +104,14 @@ if __name__ == '__main__':
 
     parser.add_argument('--host', default='0.0.0.0', help="IP address to use for binding")
     parser.add_argument('--port', default='8080', help="Port to use for binding")
+    parser.add_argument('--offload-dir', default=None, help='directory for disk-based model offloading')
+    parser.add_argument('--vram-threshold', type=float, default=None, help='VRAM fraction threshold before offloading')
     args = parser.parse_args()
+
+    if args.vram_threshold is not None:
+        os.environ['VISIONE_VRAM_THRESHOLD'] = str(args.vram_threshold)
+
+    # Initialise query encoder now that CLI args have been applied
+    qe = QueryEncoder(args_str, offload_dir=args.offload_dir)
 
     app.run(debug=False, host=args.host, port=args.port)

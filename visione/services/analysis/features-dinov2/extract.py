@@ -8,6 +8,12 @@ import torch
 from torchvision import transforms
 
 from visione.extractor import BaseExtractor
+from visione.vram_aware_loader import (
+    load_hub_model_with_offload,
+    suggest_batch_size,
+    probe_vram,
+    get_offload_dir,
+)
 
 
 loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
@@ -56,20 +62,45 @@ class DinoV2Extractor(BaseExtractor):
 
     def setup(self):
         if self.model is None:
-            self.device = 'cuda' if self.args.gpu and torch.cuda.is_available() else 'cpu'
-            self.model = torch.hub.load('facebookresearch/dinov2', self.args.model).to(self.device)
+            if self.args.vram_threshold is not None:
+                os.environ['VISIONE_VRAM_THRESHOLD'] = str(self.args.vram_threshold)
+            offload_dir = self.args.offload_dir or get_offload_dir()
+
+            if not self.args.gpu:
+                os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+            # ViT size estimates
+            size_map = {
+                'dinov2_vits14': 0.35,
+                'dinov2_vitb14': 0.85,
+                'dinov2_vitl14': 1.2,
+                'dinov2_vitg14': 4.2,
+            }
+            size_gb = size_map.get(self.args.model, 1.2)
+            strategy = probe_vram(size_gb)
+            self._strategy = strategy
+
+            torch.hub.set_dir('/cache/torch')
+            model_name = self.args.model
+            self.model = load_hub_model_with_offload(
+                hub_load_fn=lambda: torch.hub.load('facebookresearch/dinov2', model_name),
+                model_size_gb=size_gb,
+                offload_dir=offload_dir,
+            )
             self.model.eval()
+            self.device = next(self.model.parameters()).device
 
     def extract(self, image_paths):
         self.setup()
 
         dataset = ImageListDataset(image_paths)
+        effective_batch = suggest_batch_size(self.args.batch_size, getattr(self, '_strategy', 'cuda'))
         dataloader = torch.utils.data.DataLoader(
             dataset,
             shuffle=False,
-            batch_size=self.args.batch_size,
+            batch_size=effective_batch,
             num_workers=self.args.num_workers,
-            pin_memory=True
+            pin_memory=(self.device.type == 'cuda' if hasattr(self.device, 'type') else str(self.device) == 'cuda')
         )
 
         features = []

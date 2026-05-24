@@ -15,6 +15,12 @@ from torch.utils.data import DataLoader
 from common import init_device, init_model, set_seed_logger
 from config import Config
 from visione.extractor import BaseVideoExtractor
+from visione.vram_aware_loader import (
+    load_checkpoint_to_device,
+    suggest_batch_size,
+    probe_vram,
+    get_offload_dir,
+)
 
 
 def load_shot(
@@ -179,14 +185,48 @@ class CLIP2VideoExtractor(BaseVideoExtractor):
 
     def setup(self):
         if self.model is None:
-            # init device and model
+            if self.args.vram_threshold is not None:
+                os.environ['VISIONE_VRAM_THRESHOLD'] = str(self.args.vram_threshold)
+            offload_dir = self.args.offload_dir or get_offload_dir()
+
+            if not self.args.gpu:
+                os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+            # CLIP2Video is ViT-B/32-based — ~0.6 GB
+            size_gb = 0.6
+            strategy = probe_vram(size_gb)
+            self._strategy = strategy
+
+            # init_device / init_model from the CLIP2Video repo loads the model;
+            # we override device placement afterwards via load_checkpoint_to_device
             self.device, self.n_gpu = init_device(self.conf, self.conf.local_rank, self.logger)
             self.model = init_model(self.conf, self.device, self.logger)
 
             if hasattr(self.model, 'module'):
                 self.model = self.model.module
 
-            self.model = self.model.to(self.device)
+            # Re-place model according to memory strategy
+            # init_model already loaded weights, so we just move the module
+            if strategy in ('cuda', 'cuda_risky'):
+                try:
+                    self.model = self.model.to('cuda')
+                    self.device = torch.device('cuda')
+                except torch.cuda.OutOfMemoryError:
+                    torch.cuda.empty_cache()
+                    import logging as _log
+                    _log.getLogger(__name__).warning(
+                        '[VRAMLoader] CLIP2Video: CUDA OOM — falling back to CPU'
+                    )
+                    self.model = self.model.cpu()
+                    self.device = torch.device('cpu')
+            elif strategy == 'disk':
+                from visione.vram_aware_loader import _disk_offload_generic, get_offload_dir as _god
+                self.model = _disk_offload_generic(lambda: self.model.cpu(), offload_dir)
+                self.device = next(self.model.parameters()).device
+            else:  # cpu
+                self.model = self.model.cpu()
+                self.device = torch.device('cpu')
+
             self.model.eval()
 
     def forward_batch(self, batch):
@@ -216,7 +256,9 @@ class CLIP2VideoExtractor(BaseVideoExtractor):
         shot_paths_and_times = list(shot_paths_and_times)
         dataset = C2VDataset(shot_paths_and_times, **self.load_shot_args)
         print(f"Dataset len: {len(shot_paths_and_times)}")
-        dataloader = DataLoader(dataset, batch_size=self.args.batch_size, num_workers=self.args.num_workers)
+
+        effective_batch = suggest_batch_size(self.args.batch_size, getattr(self, '_strategy', 'cuda'))
+        dataloader = DataLoader(dataset, batch_size=effective_batch, num_workers=self.args.num_workers)
 
         with torch.no_grad():
             for batch in dataloader:

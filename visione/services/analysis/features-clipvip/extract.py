@@ -16,6 +16,12 @@ from transformers import CLIPProcessor, CLIPTokenizerFast, AutoProcessor
 from clipvip.CLIP_VIP import CLIPModel, clip_loss
 
 from visione.extractor import BaseVideoExtractor
+from visione.vram_aware_loader import (
+    load_checkpoint_to_device,
+    suggest_batch_size,
+    probe_vram,
+    get_offload_dir,
+)
 
 loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
 for logger in loggers:
@@ -154,8 +160,17 @@ class CLIP2VideoExtractor(BaseVideoExtractor):
 
     def setup(self):
         if self.model is None:
-            # init device and model
-            self.device = 'cuda' if self.args.gpu and torch.cuda.is_available() else 'cpu'
+            if self.args.vram_threshold is not None:
+                os.environ['VISIONE_VRAM_THRESHOLD'] = str(self.args.vram_threshold)
+            offload_dir = self.args.offload_dir or get_offload_dir()
+
+            if not self.args.gpu:
+                os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+            # CLIPViP is ViT-B/16-based — ~0.6 GB
+            size_gb = 0.6
+            strategy = probe_vram(size_gb)
+            self._strategy = strategy
 
             extraCfg = edict({
                 "type": "ViP",
@@ -168,13 +183,16 @@ class CLIP2VideoExtractor(BaseVideoExtractor):
             clipconfig = CLIPConfig.from_pretrained("openai/clip-vit-base-patch16")
             clipconfig.vision_additional_config = extraCfg
 
-            checkpoint = torch.load("pretrain_clipvip_base_16.pt")
-            cleanDict = { key.replace("clipmodel.", "") : value for key, value in checkpoint.items() }
+            # Build skeleton on CPU first, then load weights safely
             self.model = CLIPModel(config=clipconfig)
-            self.model.load_state_dict(cleanDict)
-
-            self.model = self.model.to(self.device)
+            self.model = load_checkpoint_to_device(
+                checkpoint_path="pretrain_clipvip_base_16.pt",
+                model=self.model,
+                strategy=strategy,
+                offload_dir=offload_dir,
+            )
             self.model.eval()
+            self.device = next(self.model.parameters()).device
 
             self.processor = AutoProcessor.from_pretrained("microsoft/xclip-base-patch16")
 
@@ -205,7 +223,9 @@ class CLIP2VideoExtractor(BaseVideoExtractor):
         collate_fn = VideoCollate(self.processor)
         shot_paths_and_times = list(shot_paths_and_times)
         dataset = C2VDataset(shot_paths_and_times, **{'pad_shot_to_seconds': self.args.pad_shot_to})
-        dataloader = DataLoader(dataset, batch_size=self.args.batch_size, num_workers=self.args.num_workers, collate_fn=collate_fn)
+
+        effective_batch = suggest_batch_size(self.args.batch_size, getattr(self, '_strategy', 'cuda'))
+        dataloader = DataLoader(dataset, batch_size=effective_batch, num_workers=self.args.num_workers, collate_fn=collate_fn)
 
         with torch.no_grad():
             for batch in dataloader:

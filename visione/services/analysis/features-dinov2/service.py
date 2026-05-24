@@ -11,6 +11,8 @@ import torch
 from torch.nn import functional as F
 from torchvision import transforms
 
+from visione.vram_aware_loader import load_hub_model_with_offload, get_offload_dir, probe_vram
+
 
 torch.set_num_threads(4)
 os.environ['OMP_NUM_THREADS'] = '4'
@@ -23,10 +25,30 @@ app = Flask(__name__)
 
 
 class DinoV2Extractor():
-    def __init__(self, model_type='dinov2_vits14', gpu=False):
-        self.device = 'cuda' if gpu else 'cpu'
+    def __init__(self, model_type='dinov2_vits14', gpu=False, offload_dir=None):
+        offload_dir = offload_dir or get_offload_dir()
+
+        if not gpu:
+            os.environ.setdefault('VISIONE_OFFLOAD_MODE', 'cpu')
+
+        size_map = {
+            'dinov2_vits14': 0.35,
+            'dinov2_vitb14': 0.85,
+            'dinov2_vitl14': 1.2,
+            'dinov2_vitg14': 4.2,
+        }
+        size_gb = size_map.get(model_type, 1.2)
+        probe_vram(size_gb)  # log chosen strategy
+
         torch.hub.set_dir("/cache/torch")
-        self.model = torch.hub.load('facebookresearch/dinov2', model_type).to(self.device)
+        self.model = load_hub_model_with_offload(
+            hub_load_fn=lambda: torch.hub.load('facebookresearch/dinov2', model_type),
+            model_size_gb=size_gb,
+            offload_dir=offload_dir,
+        )
+        self.model.eval()
+        self.device = next(self.model.parameters()).device
+
         self.transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -116,11 +138,16 @@ if __name__ == '__main__':
     parser.add_argument('--model', default=default_model, choices=('dinov2_vits14', 'dinov2_vitb14', 'dinov2_vitl14', 'dinov2_vitg14'), help='Model to use')
     parser.add_argument('--no-normalized', action='store_false', dest='normalized', default=True, help='Whether to normalize features or not')
     parser.add_argument('--gpu', action='store_true', default=default_gpu, help='Whether to use GPU')
+    parser.add_argument('--offload-dir', default=None, help='directory for disk-based model offloading')
+    parser.add_argument('--vram-threshold', type=float, default=None, help='VRAM fraction threshold before offloading')
 
     args = parser.parse_args()
 
+    if args.vram_threshold is not None:
+        os.environ['VISIONE_VRAM_THRESHOLD'] = str(args.vram_threshold)
+
     # init the extractor
-    extractor = DinoV2Extractor(model_type=args.model, gpu=args.gpu)
+    extractor = DinoV2Extractor(model_type=args.model, gpu=args.gpu, offload_dir=args.offload_dir)
 
     # run the flask app
     app.run(debug=False, host=args.host, port=args.port)
