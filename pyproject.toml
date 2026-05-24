@@ -31,7 +31,7 @@ dynamic = ["dependencies"]
 "Bug Tracker" = "https://github.com/talebkanj/visione/issues"
 
 [project.scripts]
-visione = "visione.cli:__main__.main"
+visione = "visione.cli.__main__:main"
 
 [tool.setuptools]
 packages = [

@@ -2,3 +2,4 @@ test-collection/
 visione.egg-info/
 *.pyc
 __pycache__/
+.venv/

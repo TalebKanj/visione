@@ -8,12 +8,9 @@ from . import commands
 
 
 def _get_compose_dir():
-    try:  # Python < 3.9
-        import importlib_resources
-        return importlib_resources.files("visione.services")._paths[0]
-    except ImportError:  # Python >= 3.9
-        import importlib.resources
-        return Path(importlib.resources.files("visione.services").joinpath(''))
+    # Fallback to simple relative path to avoid Python 3.12+ namespace package bugs
+    # with importlib.resources.files() and MultiplexedPath.
+    return Path(__file__).resolve().parent.parent / "services"
 
 
 def main():

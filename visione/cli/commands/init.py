@@ -5,12 +5,8 @@ from .command import BaseCommand
 
 
 def _get_skel_dir():
-    try:  # Python < 3.9
-        import importlib_resources
-        return importlib_resources.files("visione.skel")._paths[0]
-    except ImportError:  # Python >= 3.9
-        import importlib.resources
-        return Path(importlib.resources.files("visione.skel").joinpath(''))
+    # Use robust relative path to avoid Python 3.12 namespace package bugs
+    return Path(__file__).resolve().parent.parent.parent / "skel"
 
 
 class InitCommand(BaseCommand):

@@ -456,7 +456,7 @@ def load_checkpoint_to_device(
 
     if strategy in ("cuda", "cuda_risky"):
         def _try_gpu():
-            return model.cuda()
+            return model.to("cuda")
 
         def _fallback_cpu():
             log.warning("[VRAMLoader] Checkpoint OOM — keeping model on CPU")
