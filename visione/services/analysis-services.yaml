@@ -39,7 +39,7 @@ services:
 
   scene-detection:
     build: ./analysis/scene-detection
-    image: ghcr.io/talebkanj/visione-scene-detection
+    image: ghcr.io/swift2025/visione-scene-detection
 
     volumes: &common_volumes
       - ${VISIONE_ROOT}:/data
@@ -50,13 +50,13 @@ services:
   objects-colors:
     build: ./analysis/objects-colors
 
-    image: ghcr.io/talebkanj/visione-objects-colors
+    image: ghcr.io/swift2025/visione-objects-colors
     volumes: *common_volumes
     profiles: ["analysis", "objects-colors"]
 
   objects-mrcnn-lvis:
     build: ./analysis/objects-mmdet
-    image: ghcr.io/talebkanj/visione-objects-mmdet
+    image: ghcr.io/swift2025/visione-objects-mmdet
 
     environment: ["DETECTOR_NAME=mrcnn-lvis"]
     volumes: *common_volumes
@@ -65,7 +65,7 @@ services:
 
   objects-vfnet64-coco:
     build: ./analysis/objects-mmdet
-    image: ghcr.io/talebkanj/visione-objects-mmdet
+    image: ghcr.io/swift2025/visione-objects-mmdet
 
     environment: ["DETECTOR_NAME=vfnet64-coco"]
     volumes: *common_volumes
@@ -74,14 +74,14 @@ services:
 
   objects-frcnn-oiv4:
     build: ./analysis/objects-openimagesv4
-    image: ghcr.io/talebkanj/visione-objects-openimagesv4
+    image: ghcr.io/swift2025/visione-objects-openimagesv4
 
     volumes: *common_volumes
     profiles: ["analysis", "objects-frcnn-oiv4"]
 
   features-clip-openai:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/visione-features-clip
+    image: ghcr.io/swift2025/visione-features-clip
     depends_on:
       - faiss-index-manager
 
@@ -95,7 +95,7 @@ services:
 
   features-clip-laion:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/visione-features-clip
+    image: ghcr.io/swift2025/visione-features-clip
     depends_on:
       - faiss-index-manager
 
@@ -109,7 +109,7 @@ services:
 
   features-clip-datacomp:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/visione-features-clip
+    image: ghcr.io/swift2025/visione-features-clip
     depends_on:
       - faiss-index-manager
 
@@ -123,7 +123,7 @@ services:
 
   features-biomed-clip:
     build: ./analysis/features-openclip
-    image: ghcr.io/talebkanj/visione-features-openclip
+    image: ghcr.io/swift2025/visione-features-openclip
     depends_on:
       - faiss-index-manager
 
@@ -137,7 +137,7 @@ services:
 
   features-clip2video:
     build: ./analysis/features-clip2video
-    image: ghcr.io/talebkanj/visione-features-clip2video
+    image: ghcr.io/swift2025/visione-features-clip2video
     depends_on:
       - faiss-index-manager
 
@@ -150,7 +150,7 @@ services:
     build:
       context: ./analysis/features-aladin
       secrets: ["asset_token"]
-    image: ghcr.io/talebkanj/visione-features-aladin
+    image: ghcr.io/swift2025/visione-features-aladin:v2
     depends_on:
       - faiss-index-manager
 
@@ -161,7 +161,7 @@ services:
 
   features-dinov2:
     build: ./analysis/features-dinov2
-    image: ghcr.io/talebkanj/visione-features-dinov2
+    image: ghcr.io/swift2025/visione-features-dinov2:v2
     depends_on:
       - faiss-index-manager
 
@@ -175,7 +175,7 @@ services:
 
   features-clipvip:
     build: ./analysis/features-clipvip
-    image: ghcr.io/talebkanj/visione-features-clipvip
+    image: ghcr.io/swift2025/visione-features-clipvip:v2
     depends_on:
       - faiss-index-manager
 
@@ -186,28 +186,28 @@ services:
 
   frame-cluster:
     build: ./analysis/frame-cluster
-    image: ghcr.io/talebkanj/visione-frame-cluster
+    image: ghcr.io/swift2025/visione-frame-cluster
 
     volumes: *common_volumes
     profiles: ["analysis", "frame-cluster"]
 
   str-object-encoder:
     build: ./index/str-object-encoder
-    image: ghcr.io/talebkanj/visione-str-object-encoder
+    image: ghcr.io/swift2025/visione-str-object-encoder
 
     volumes: *common_volumes
     profiles: ["analysis", "str-object-encoder"]
 
   str-feature-encoder:
     build: ./index/str-feature-encoder
-    image: ghcr.io/talebkanj/visione-str-feature-encoder
+    image: ghcr.io/swift2025/visione-str-feature-encoder
 
     volumes: *common_volumes
     profiles: ["analysis", "str-feature-encoder"]
 
   faiss-index-manager:
     build: ./index/faiss-index-manager
-    image: ghcr.io/talebkanj/visione-faiss-index-manager
+    image: ghcr.io/swift2025/visione-faiss-index-manager
 
     volumes: *common_volumes
     profiles: ["analysis", "faiss-index-manager"]

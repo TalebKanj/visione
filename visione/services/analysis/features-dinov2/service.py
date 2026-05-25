@@ -42,7 +42,12 @@ class DinoV2Extractor():
 
         torch.hub.set_dir("/cache/torch")
         self.model = load_hub_model_with_offload(
-            hub_load_fn=lambda: torch.hub.load('facebookresearch/dinov2', model_type),
+            hub_load_fn=lambda: torch.hub.load(
+                '/usr/src/dinov2',
+                model_type,
+                source='local',  # use pre-cloned repo, no GitHub network call
+                pretrained=True,
+            ),
             model_size_gb=size_gb,
             offload_dir=offload_dir,
         )

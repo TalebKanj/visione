@@ -47,7 +47,7 @@ services:
       args:
         - TOMCAT_MANAGER_USER=${VISIONE_USERNAME}
         - TOMCAT_MANAGER_PASS=${VISIONE_PASSWORD}
-    image: ghcr.io/talebkanj/visione-core
+    image: ghcr.io/swift2025/visione-core
     expose: ["8080"]
     volumes:
       - ${VISIONE_ROOT}:/data
@@ -55,7 +55,7 @@ services:
 
   features-clip:
     build: ./analysis/features-clip
-    image: ghcr.io/talebkanj/visione-features-clip
+    image: ghcr.io/swift2025/visione-features-clip
     volumes:
       - ${VISIONE_ROOT}:/data
       - ${VISIONE_CACHE}:/cache

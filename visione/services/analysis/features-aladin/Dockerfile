@@ -48,6 +48,7 @@ RUN python setup.py build develop
 
 # Fix torch.load for PyTorch 2.6+ compatibility (weights_only default changed to True)
 RUN sed -i -e "s/torch.load(filename, map_location='cpu')/torch.load(filename, map_location='cpu', weights_only=False)/g" /usr/src/app/ALADIN/alad/extraction/retrieval_utils.py
+RUN sed -i -e "s/torch.load(op.join(args.eval_model_dir, 'training_args.bin'))/torch.load(op.join(args.eval_model_dir, 'training_args.bin'), weights_only=False)/g" /usr/src/app/ALADIN/alad/extraction/retrieval_utils.py
 
 # Download weights
 RUN --mount=type=secret,id=asset_token,required \
